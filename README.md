@@ -12,6 +12,10 @@ Header-only, colored printing library.
 ^6 = Magenta
 ^7 = White
 
+## TODO
+
+1. Add the support for both light and normal colors (currently supports only light colors using FOREGROUND_INTENSITY)
+
 ## Author
 
 Michael "Maktm" K.
