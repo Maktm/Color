@@ -3,7 +3,6 @@
 #include <ostream>
 #include <string>
 #include <vector>
-#include <functional>
 
 #if defined(_WIN32)
 #include <windows.h>
