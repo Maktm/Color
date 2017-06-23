@@ -170,7 +170,7 @@ template <typename CharT> inline basic_colorizer<CharT> col(CharT const* s)
  * Use this when you want to ensure that the color doesn't stay
  * on the console longer than the program is alive.
  */
-void set_atexit_handler()
+inline void set_atexit_handler()
 {
   static bool has_registered_cb = false;
   static std::uint16_t orig_attr = 0x0;
