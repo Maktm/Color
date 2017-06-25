@@ -1,193 +1,283 @@
 #pragma once
 
+#include <cassert>
 #include <ostream>
+#include <cctype>
 #include <string>
+#include <map>
 #include <vector>
 
 #if defined(_WIN32)
 #include <windows.h>
 #else
-#error "Unsupport platform in use"
+#error "Unsupported platform in use"
 #endif // #if defined(_WIN32)
 
 namespace colorize
 {
-enum class Color
+/********************
+* Windows Constants *
+*********************/
+
+/* Foreground Colors */
+constexpr std::int16_t kForegroundBlack = 0x0000;
+constexpr std::int16_t kForegroundBlue = 0x0001;
+constexpr std::int16_t kForegroundGreen = 0x0002;
+constexpr std::int16_t kForegroundAqua = 0x0003;
+constexpr std::int16_t kForegroundRed = 0x0004;
+constexpr std::int16_t kForegroundPurple = 0x0005;
+constexpr std::int16_t kForegroundYellow = 0x0006;
+constexpr std::int16_t kForegroundWhite = 0x0007;
+constexpr std::int16_t kForegroundGray = 0x0008;
+
+/* Light Foreground Colors */
+constexpr std::int16_t kForegroundLBlue = 0x0009;
+constexpr std::int16_t kForegroundLGreen = 0x000A;
+constexpr std::int16_t kForegroundLAqua = 0x000B;
+constexpr std::int16_t kForegroundLRed = 0x000C;
+constexpr std::int16_t kForegroundLPurple = 0x000D;
+constexpr std::int16_t kForegroundLYellow = 0x000E;
+constexpr std::int16_t kForegroundBWhite = 0x000F;
+
+enum Color : std::int16_t
 {
-  Red = 1,
-  Green = 2,
-  Yellow = 3,
-  Blue = 4,
-  Cyan = 5,
-  Magenta = 6,
-  White = 7
+	Black = kForegroundBlack,
+	Blue = kForegroundBlue,
+	Green = kForegroundGreen,
+	Aqua = kForegroundAqua,
+	Red = kForegroundRed,
+	Purple = kForegroundPurple,
+	Yellow = kForegroundYellow,
+	White = kForegroundWhite,
+	Gray = kForegroundGray,
+	LightBlue = kForegroundLBlue,
+	LightGreen = kForegroundLGreen,
+	LightAqua = kForegroundLAqua,
+	LightRed = kForegroundLRed,
+	LightPurple = kForegroundLPurple,
+	LightYellow = kForegroundLYellow,
+	BrightWhite = kForegroundBWhite
 };
 
-enum Foreground : std::uint16_t
+inline Color DefaultColor(Color color = static_cast<Color>(0xFF))
 {
-  Red = 0x4,
-  Green = 0x2,
-  Yellow = 0x6,
-  Blue = 0x9,
-  Cyan = 0xB,
-  Magenta = 0xD,
-  White = 0x7
-};
+	static Color default_color = Color::White;
+	if (static_cast<std::int16_t>(color) != 0xFF)
+	{
+		default_color = color;
+	}
 
-template <typename CharT> class basic_colorizer
+	return default_color;
+}
+
+class NumberToColorMapper
 {
-  using string_type = std::basic_string<CharT>;
-  using stream_type = std::basic_ostream<CharT>;
+	std::size_t const kAvailableColors = 16;
 
 public:
-  basic_colorizer(string_type const& s)
-    : text_{s}, std_handle_{GetStdHandle(STD_OUTPUT_HANDLE)}, old_attrib_{0}
-  {
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    GetConsoleScreenBufferInfo(std_handle_, &csbi);
-    old_attrib_ = csbi.wAttributes;
-  }
+	NumberToColorMapper() = default;
 
-  ~basic_colorizer()
-  {
-    restore();
-  }
+	NumberToColorMapper(std::map<std::int16_t, Color> const& m)
+		: map_(m)
+	{
+		// Verify that the mapper contains all the colors that
+		// need to be defined to prevent any future errors.
+		// Check if there's a performance hit.		
+#if defined(COLORIZE_ENABLE_MAPPING_CHECK)
+		std::size_t cnt = 0;
+		std::vector<Color> cnted;
+		for (auto iter = map_.begin(); iter != map_.end(); ++iter)
+		{
+			if (std::find(cnted.begin(), cnted.end(), iter->second) == cnted.end())
+			{
+				cnted.push_back(iter->second);
+			}
+		}
 
-  void operator()(stream_type& os)
-  {
-    auto is_color_string = [](CharT const* s) -> bool {
-      char const kEscapeChar = '^';
+		assert(cnted.size() == kAvailableColors);
+#endif
+	}
 
-      return (s && *(s) == kEscapeChar && *(s + 1) &&
-              *((s) + 1) != kEscapeChar);
-    };
+	NumberToColorMapper& operator=(NumberToColorMapper const& rhs)
+	{
+		map_ = rhs.map_;
+		return *this;
+	}
 
-    CharT const* s = text_.c_str();
-    string_type cut{};
-    while (*s)
-    {
-      if (is_color_string(s))
-      {
-        os << cut;
-        if (!cut.empty())
-          cut.clear();
 
-        std::uint16_t color_num = *(s + 1) - '0';
-        if (color_num >= 1 && color_num <= 7)
-        {
-          set(static_cast<Color>(color_num), true);
-          s += 2;
-          continue;
-        }
-        else
-        {
-          cut += *s;
-          s++;
-          continue;
-        }
-      }
+	Color GetColor(std::int16_t idx) const
+	{
+		assert(idx > 0x0000 && idx <= map_.size());
+		return map_.at(idx);
+	}
 
-      cut += *s;
-      s++;
-    }
-
-    if (!cut.empty())
-    {
-      os << cut;
-      cut.clear();
-    }
-  }
+	std::size_t Size() const
+	{
+		return map_.size();
+	}
 
 private:
-  void set(std::uint16_t attr)
-  {
-    SetConsoleTextAttribute(std_handle_, attr);
-  }
-
-  void set(Color color, bool intensify)
-  {
-    std::uint16_t win_color = 0;
-    switch (color)
-    {
-    case Color::Red:
-      win_color = Foreground::Red;
-      break;
-    case Color::Green:
-      win_color = Foreground::Green;
-      break;
-    case Color::Yellow:
-      win_color = Foreground::Yellow;
-      break;
-    case Color::Blue:
-      win_color = Foreground::Blue;
-      break;
-    case Color::Cyan:
-      win_color = Foreground::Cyan;
-      break;
-    case Color::Magenta:
-      win_color = Foreground::Magenta;
-      break;
-    case Color::White:
-      win_color = Foreground::White;
-      break;
-    }
-
-    if (intensify)
-      win_color |= FOREGROUND_INTENSITY;
-
-    SetConsoleTextAttribute(std_handle_, win_color);
-  }
-
-  void restore()
-  {
-    set(old_attrib_);
-  }
-
-  string_type text_;
-  HANDLE std_handle_;
-  std::uint16_t old_attrib_;
+	std::map<std::int16_t, Color> map_;
 };
 
-template <typename CharT>
-inline std::basic_ostream<CharT>& operator<<(std::basic_ostream<CharT>& os,
-                                             basic_colorizer<CharT> colorizer)
+inline NumberToColorMapper GlobalMapper(NumberToColorMapper tcm = NumberToColorMapper{})
 {
-  colorizer(os);
-  return os;
+	static NumberToColorMapper default_mapping{
+		{
+			/* Light Foreground Colors */
+			{0x0001, Color::LightRed},
+			{0x0002, Color::LightGreen},
+			{0x0003, Color::LightYellow},
+			{0x0004, Color::LightBlue},
+			{0x0005, Color::LightAqua},
+			{0x0006, Color::LightPurple},
+			{0x0007, Color::BrightWhite},
+
+			/* Foreground Colors */
+			{0x0008, Color::Red},
+			{0x0009, Color::Green},
+			{0x000A, Color::Yellow},
+			{0x000B, Color::Blue},
+			{0x000C, Color::Aqua},
+			{0x000D, Color::Purple},
+			{0x000E, Color::Gray},
+			{0x000F, Color::White},
+			{0x0000, Color::Black}
+		}
+	};
+
+	if (tcm.Size() > 0)
+	{
+		default_mapping = tcm;
+	}
+
+	return default_mapping;
 }
 
-template <typename CharT> inline basic_colorizer<CharT> col(CharT const* s)
+class FormattedString
 {
-  std::basic_string<CharT> str(s);
-  basic_colorizer<CharT> cl(s);
+	char const kForegroundEscape = '^';
+	char const kBackgroundEscape = '*';
+	char const kResetToDefEscape = '!';
 
-  return cl;
+public:
+	FormattedString(char const* buffer)
+		: buffer_{buffer},
+		mapper_{GlobalMapper()}
+	{
+	}
+
+	template <typename CharT>
+	void operator()(std::basic_ostream<CharT>& os) const
+	{
+		std::string portion{""};
+		for (auto iter = buffer_.begin(); iter != buffer_.end();)
+		{
+			if (IsColorEscape(iter, buffer_.end()))
+			{
+				// Output the string saved so far.
+				if (!portion.empty())
+				{
+					os << portion.c_str();
+					portion.clear();
+				}
+
+				// Check this for errors.
+				char chr = std::tolower((iter + 1)[0]);
+				auto dec = (chr > '9') ? (chr &~0x20) - 'A' + 10 : (chr - '0');;
+
+				if (dec >= 0x0000 && dec <= 0x000F)
+				{
+					SetConsoleColor(dec);
+					iter += 2;
+					continue;
+				}
+				else if (chr == kResetToDefEscape)
+				{
+					SetConsoleColor(DefaultColor(), false);
+					iter += 2;
+					continue;
+				}
+				else
+				{
+					portion += *iter;
+					iter++;
+					continue;
+				}
+			}
+
+			portion += *iter;
+			++iter;
+		}
+
+		if (!portion.empty())
+		{
+			os << portion.c_str();
+			portion.clear();
+		}
+	}
+
+private:
+	void SetConsoleColor(std::int16_t idx, bool use_mapper = true) const
+	{
+		auto color = use_mapper ? mapper_.GetColor(idx) : idx;
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
+	}
+
+	bool IsHex(char c) const
+	{
+		return c >= '0' && c <= 'f';
+	}
+
+	bool IsColorEscape(std::string::const_iterator iter, std::string::const_iterator end) const
+	{
+		return (iter != end && (*iter == kForegroundEscape || *iter == kBackgroundEscape));
+	}
+
+	std::string buffer_;
+	NumberToColorMapper mapper_{GlobalMapper()};
+};
+
+/**********************
+* <ostream> Overloads *
+***********************/
+
+inline std::ostream& operator<<(std::ostream& os, FormattedString const& cs)
+{
+	cs(os);
+	return os;
 }
 
-/**
- * NOTE: Make sure this only call this once.
- *
- * Use this when you want to ensure that the color doesn't stay
- * on the console longer than the program is alive.
- */
-inline void set_atexit_handler()
+inline std::wostream& operator<<(std::wostream& os, FormattedString const& cs)
 {
-  static bool has_registered_cb = false;
-  static std::uint16_t orig_attr = 0x0;
-  HANDLE std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-  if (!has_registered_cb)
-  {
-    has_registered_cb = true;
-
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    GetConsoleScreenBufferInfo(std_handle, &csbi);
-    orig_attr = csbi.wAttributes;
-
-    std::atexit(set_atexit_handler);
-  }
-  else
-  {
-    SetConsoleTextAttribute(std_handle, orig_attr);
-  }
+	cs(os);
+	return os;
 }
+
+/*****************
+* atexit Handler *
+******************/
+inline void SetAtexitHandler()
+{
+	static bool has_registered_cb = false;
+	static std::int16_t attr = 0x0000;
+
+	HANDLE std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+	if (!has_registered_cb)
+	{
+		has_registered_cb = true;
+
+		CONSOLE_SCREEN_BUFFER_INFO csbi;
+		GetConsoleScreenBufferInfo(std_handle, &csbi);
+		attr = csbi.wAttributes;
+
+		std::atexit(SetAtexitHandler);
+	}
+	else
+	{
+		SetConsoleTextAttribute(std_handle, attr);
+	}
+}
+
+using format = colorize::FormattedString;
 }
