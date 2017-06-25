@@ -6,6 +6,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <algorithm>
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -13,33 +14,33 @@
 #error "Unsupported platform in use"
 #endif // #if defined(_WIN32)
 
-namespace colorize
+namespace color
 {
 /********************
 * Windows Constants *
 *********************/
 
 /* Foreground Colors */
-constexpr std::int16_t kForegroundBlack = 0x0000;
-constexpr std::int16_t kForegroundBlue = 0x0001;
-constexpr std::int16_t kForegroundGreen = 0x0002;
-constexpr std::int16_t kForegroundAqua = 0x0003;
-constexpr std::int16_t kForegroundRed = 0x0004;
-constexpr std::int16_t kForegroundPurple = 0x0005;
-constexpr std::int16_t kForegroundYellow = 0x0006;
-constexpr std::int16_t kForegroundWhite = 0x0007;
-constexpr std::int16_t kForegroundGray = 0x0008;
+constexpr std::uint16_t kForegroundBlack = 0x0000;
+constexpr std::uint16_t kForegroundBlue = 0x0001;
+constexpr std::uint16_t kForegroundGreen = 0x0002;
+constexpr std::uint16_t kForegroundAqua = 0x0003;
+constexpr std::uint16_t kForegroundRed = 0x0004;
+constexpr std::uint16_t kForegroundPurple = 0x0005;
+constexpr std::uint16_t kForegroundYellow = 0x0006;
+constexpr std::uint16_t kForegroundWhite = 0x0007;
+constexpr std::uint16_t kForegroundGray = 0x0008;
 
 /* Light Foreground Colors */
-constexpr std::int16_t kForegroundLBlue = 0x0009;
-constexpr std::int16_t kForegroundLGreen = 0x000A;
-constexpr std::int16_t kForegroundLAqua = 0x000B;
-constexpr std::int16_t kForegroundLRed = 0x000C;
-constexpr std::int16_t kForegroundLPurple = 0x000D;
-constexpr std::int16_t kForegroundLYellow = 0x000E;
-constexpr std::int16_t kForegroundBWhite = 0x000F;
+constexpr std::uint16_t kForegroundLBlue = 0x0009;
+constexpr std::uint16_t kForegroundLGreen = 0x000A;
+constexpr std::uint16_t kForegroundLAqua = 0x000B;
+constexpr std::uint16_t kForegroundLRed = 0x000C;
+constexpr std::uint16_t kForegroundLPurple = 0x000D;
+constexpr std::uint16_t kForegroundLYellow = 0x000E;
+constexpr std::uint16_t kForegroundBWhite = 0x000F;
 
-enum Color : std::int16_t
+enum Color : std::uint16_t
 {
 	Black = kForegroundBlack,
 	Blue = kForegroundBlue,
@@ -59,55 +60,31 @@ enum Color : std::int16_t
 	BrightWhite = kForegroundBWhite
 };
 
-inline Color DefaultColor(Color color = static_cast<Color>(0xFF))
-{
-	static Color default_color = Color::White;
-	if (static_cast<std::int16_t>(color) != 0xFF)
-	{
-		default_color = color;
-	}
+/****************
+* Color Mapping *
+*****************/
 
-	return default_color;
-}
-
-class NumberToColorMapper
+class DynamicColorMapper
 {
 	std::size_t const kAvailableColors = 16;
 
 public:
-	NumberToColorMapper() = default;
+	DynamicColorMapper() = default;
 
-	NumberToColorMapper(std::map<std::int16_t, Color> const& m)
+	DynamicColorMapper(std::map<std::uint16_t, Color> const& m)
 		: map_(m)
 	{
-		// Verify that the mapper contains all the colors that
-		// need to be defined to prevent any future errors.
-		// Check if there's a performance hit.		
-#if defined(COLORIZE_ENABLE_MAPPING_CHECK)
-		std::size_t cnt = 0;
-		std::vector<Color> cnted;
-		for (auto iter = map_.begin(); iter != map_.end(); ++iter)
-		{
-			if (std::find(cnted.begin(), cnted.end(), iter->second) == cnted.end())
-			{
-				cnted.push_back(iter->second);
-			}
-		}
-
-		assert(cnted.size() == kAvailableColors);
-#endif
 	}
 
-	NumberToColorMapper& operator=(NumberToColorMapper const& rhs)
+	DynamicColorMapper& operator=(DynamicColorMapper const& rhs)
 	{
 		map_ = rhs.map_;
 		return *this;
 	}
 
 
-	Color GetColor(std::int16_t idx) const
+	Color GetColor(std::uint16_t idx) const
 	{
-		assert(idx > 0x0000 && idx <= map_.size());
 		return map_.at(idx);
 	}
 
@@ -116,13 +93,18 @@ public:
 		return map_.size();
 	}
 
+	bool IsColorPresent(std::uint16_t dec) const
+	{
+		return map_.find(dec) != map_.end();
+	}
+
 private:
-	std::map<std::int16_t, Color> map_;
+	std::map<std::uint16_t, Color> map_;
 };
 
-inline NumberToColorMapper GlobalMapper(NumberToColorMapper tcm = NumberToColorMapper{})
+inline DynamicColorMapper GlobalMapper(DynamicColorMapper tcm = DynamicColorMapper{})
 {
-	static NumberToColorMapper default_mapping{
+	static DynamicColorMapper default_mapping{
 		{
 			/* Light Foreground Colors */
 			{0x0001, Color::LightRed},
@@ -154,10 +136,26 @@ inline NumberToColorMapper GlobalMapper(NumberToColorMapper tcm = NumberToColorM
 	return default_mapping;
 }
 
+inline Color DefaultColor(Color color = static_cast<Color>(0xFF))
+{
+	static Color default_color = Color::White;
+
+	if (static_cast<std::uint16_t>(color) != 0xFF)
+	{
+		default_color = color;
+	}
+
+	return default_color;
+}
+
+/************
+* Formatter *
+*************/
+
 class FormattedString
 {
 	char const kForegroundEscape = '^';
-	char const kBackgroundEscape = '*';
+	char const kBackgroundEscape = '*'; // For future background colors implementation.
 	char const kResetToDefEscape = '!';
 
 public:
@@ -175,35 +173,34 @@ public:
 		{
 			if (IsColorEscape(iter, buffer_.end()))
 			{
-				// Output the string saved so far.
 				if (!portion.empty())
 				{
+					// Flush everything built so far so we can build
+					// a string with a different color.
 					os << portion.c_str();
 					portion.clear();
 				}
 
-				// Check this for errors.
 				char chr = std::tolower((iter + 1)[0]);
-				auto dec = (chr > '9') ? (chr &~0x20) - 'A' + 10 : (chr - '0');;
+				std::uint16_t dec = (chr > '9') ? (chr &~0x20) - 'A' + 10 : (chr - '0');;
 
-				if (dec >= 0x0000 && dec <= 0x000F)
+				if (mapper_.IsColorPresent(dec))
 				{
 					SetConsoleColor(dec);
 					iter += 2;
-					continue;
 				}
 				else if (chr == kResetToDefEscape)
 				{
 					SetConsoleColor(DefaultColor(), false);
 					iter += 2;
-					continue;
 				}
 				else
 				{
 					portion += *iter;
 					iter++;
-					continue;
 				}
+
+				continue;
 			}
 
 			portion += *iter;
@@ -218,24 +215,24 @@ public:
 	}
 
 private:
-	void SetConsoleColor(std::int16_t idx, bool use_mapper = true) const
+	void SetConsoleColor(std::uint16_t idx, bool use_mapper = true) const
 	{
 		auto color = use_mapper ? mapper_.GetColor(idx) : idx;
 		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
 	}
 
-	bool IsHex(char c) const
+	inline bool IsHex(char c) const
 	{
 		return c >= '0' && c <= 'f';
 	}
 
-	bool IsColorEscape(std::string::const_iterator iter, std::string::const_iterator end) const
+	inline bool IsColorEscape(std::string::const_iterator iter, std::string::const_iterator end) const
 	{
 		return (iter != end && (*iter == kForegroundEscape || *iter == kBackgroundEscape));
 	}
 
 	std::string buffer_;
-	NumberToColorMapper mapper_{GlobalMapper()};
+	DynamicColorMapper mapper_{GlobalMapper()};
 };
 
 /*****************
@@ -281,7 +278,7 @@ inline std::wostream& operator<<(std::wostream& os, ResetColor const& rs)
 inline void SetAtexitHandler()
 {
 	static bool has_registered_cb = false;
-	static std::int16_t attr = 0x0000;
+	static std::uint16_t attr = 0x0000;
 
 	HANDLE std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	if (!has_registered_cb)
@@ -300,6 +297,6 @@ inline void SetAtexitHandler()
 	}
 }
 
-using format = colorize::FormattedString;
-using reset = colorize::ResetColor;
+using format = color::FormattedString;
+using reset = color::ResetColor;
 }
