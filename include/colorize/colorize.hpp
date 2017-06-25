@@ -238,19 +238,40 @@ private:
 	NumberToColorMapper mapper_{GlobalMapper()};
 };
 
+/*****************
+* Color Resetter *
+******************/
+struct ResetColor
+{
+};
+
 /**********************
 * <ostream> Overloads *
 ***********************/
 
-inline std::ostream& operator<<(std::ostream& os, FormattedString const& cs)
+inline std::ostream& operator<<(std::ostream& os, FormattedString const& fs)
 {
-	cs(os);
+	fs(os);
 	return os;
 }
 
-inline std::wostream& operator<<(std::wostream& os, FormattedString const& cs)
+inline std::wostream& operator<<(std::wostream& os, FormattedString const& fs)
 {
-	cs(os);
+	fs(os);
+	return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, ResetColor const& rs)
+{
+	FormattedString fs("^!");
+	fs(os);
+	return os;
+}
+
+inline std::wostream& operator<<(std::wostream& os, ResetColor const& rs)
+{
+	FormattedString fs("^!");
+	fs(os);
 	return os;
 }
 
@@ -280,4 +301,5 @@ inline void SetAtexitHandler()
 }
 
 using format = colorize::FormattedString;
+using reset = colorize::ResetColor;
 }
