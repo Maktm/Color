@@ -159,7 +159,7 @@ class FormattedString
 	char const kResetToDefEscape = '!';
 
 public:
-	FormattedString(char const* buffer)
+	FormattedString(std::string const& buffer)
 		: buffer_{buffer},
 		mapper_{GlobalMapper()}
 	{
