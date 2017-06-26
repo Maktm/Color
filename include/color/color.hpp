@@ -161,7 +161,7 @@ class FormattedString
 public:
 	FormattedString(std::string const& buffer)
 		: buffer_{buffer},
-		mapper_{GlobalMapper()}
+		  mapper_{GlobalMapper()}
 	{
 	}
 
@@ -232,7 +232,7 @@ private:
 	}
 
 	std::string buffer_;
-	DynamicColorMapper mapper_{GlobalMapper()};
+	DynamicColorMapper mapper_;
 };
 
 /*****************
