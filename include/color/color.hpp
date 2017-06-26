@@ -159,9 +159,10 @@ class FormattedString
 	char const kResetToDefEscape = '!';
 
 public:
-	FormattedString(std::string const& buffer)
+	FormattedString(std::string const& buffer, HANDLE std_handle = INVALID_HANDLE_VALUE)
 		: buffer_{buffer},
-		  mapper_{GlobalMapper()}
+		  mapper_{GlobalMapper()},
+		  std_handle_{std_handle == INVALID_HANDLE_VALUE ? GetStdHandle(STD_OUTPUT_HANDLE) : std_handle}
 	{
 	}
 
@@ -218,7 +219,7 @@ private:
 	void SetConsoleColor(std::uint16_t idx, bool use_mapper = true) const
 	{
 		auto color = use_mapper ? mapper_.GetColor(idx) : idx;
-		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
+		SetConsoleTextAttribute(std_handle_, color);
 	}
 
 	inline bool IsHex(char c) const
@@ -233,6 +234,7 @@ private:
 
 	std::string buffer_;
 	DynamicColorMapper mapper_;
+	HANDLE std_handle_;
 };
 
 /*****************
