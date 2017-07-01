@@ -19,7 +19,6 @@ namespace color
 /********************
 * Windows Constants *
 *********************/
-
 /* Foreground Colors */
 constexpr std::uint16_t kForegroundBlack = 0x0000;
 constexpr std::uint16_t kForegroundBlue = 0x0001;
@@ -63,7 +62,6 @@ enum Color : std::uint16_t
 /****************
 * Color Mapping *
 *****************/
-
 class DynamicColorMapper
 {
 	std::size_t const kAvailableColors = 16;
@@ -81,7 +79,6 @@ public:
 		map_ = rhs.map_;
 		return *this;
 	}
-
 
 	Color GetColor(std::uint16_t idx) const
 	{
@@ -129,9 +126,7 @@ inline DynamicColorMapper GlobalMapper(DynamicColorMapper dcm = DynamicColorMapp
 	};
 
 	if (dcm.Size() > 0)
-	{
 		default_mapping = dcm;
-	}
 
 	return default_mapping;
 }
@@ -141,15 +136,13 @@ inline Color DefaultColor(Color color = static_cast<Color>(0xFF))
 	static Color default_color = Color::White;
 
 	if (static_cast<std::uint16_t>(color) != 0xFF)
-	{
 		default_color = color;
-	}
 
 	return default_color;
 }
 
 /**
-* Call this before instantiating an object of this class type to
+* Call this before instantiating an object of FormattedString class type to
 * control the console output buffer (target output location).
 */
 inline HANDLE GlobalStdHandle(HANDLE std_handle = INVALID_HANDLE_VALUE)
@@ -162,7 +155,7 @@ inline HANDLE GlobalStdHandle(HANDLE std_handle = INVALID_HANDLE_VALUE)
 	return handle;
 }
 
-void UpdateConsoleColor(HANDLE std_handle, std::uint16_t color)
+inline void UpdateConsoleColor(HANDLE std_handle, std::uint16_t color)
 {
 	SetConsoleTextAttribute(std_handle, color);
 }
@@ -174,13 +167,14 @@ class FormattedString
 {
 	char const kForegroundEscape = '^';
 	char const kBackgroundEscape = '*'; // For future background colors implementation.
-	char const kResetToDefEscape = '!';
+
+	char const kResetToDefOpt = '!';
 
 public:
 	FormattedString(std::string const& buffer)
 		: buffer_{buffer},
-		mapper_{GlobalMapper()},
-		std_handle_{GlobalStdHandle()}
+		  mapper_{GlobalMapper()},
+		  std_handle_{GlobalStdHandle()}
 	{
 	}
 
@@ -201,14 +195,14 @@ public:
 				}
 
 				char chr = std::tolower((iter + 1)[0]);
-				std::uint16_t dec = (chr > '9') ? (chr &~0x20) - 'A' + 10 : (chr - '0');;
+				std::uint16_t dec = (chr > '9') ? (chr &~0x20) - 'A' + 10 : (chr - '0');
 
 				if (mapper_.IsColorPresent(dec))
 				{
 					SetConsoleColor(dec);
 					iter += 2;
 				}
-				else if (chr == kResetToDefEscape)
+				else if (chr == kResetToDefOpt)
 				{
 					SetConsoleColor(DefaultColor(), false);
 					iter += 2;
@@ -240,12 +234,7 @@ private:
 		UpdateConsoleColor(std_handle_, color);
 	}
 
-	inline bool IsHex(char c) const
-	{
-		return c >= '0' && c <= 'f';
-	}
-
-	inline bool IsColorEscape(std::string::const_iterator iter, std::string::const_iterator end) const
+	bool IsColorEscape(std::string::const_iterator iter, std::string::const_iterator end) const
 	{
 		return (iter != end && (*iter == kForegroundEscape || *iter == kBackgroundEscape));
 	}
@@ -265,7 +254,6 @@ struct ResetColor
 /**********************
 * <ostream> Overloads *
 ***********************/
-
 inline std::ostream& operator<<(std::ostream& os, FormattedString const& fs)
 {
 	fs(os);
@@ -282,32 +270,28 @@ inline std::wostream& operator<<(std::wostream& os, FormattedString const& fs)
 
 inline std::ostream& operator<<(std::ostream& os, ResetColor const& rs)
 {
-	FormattedString fs("^!");
-	fs(os);
+	UpdateConsoleColor(GlobalStdHandle(), DefaultColor());
 
 	return os;
 }
 
 inline std::wostream& operator<<(std::wostream& os, ResetColor const& rs)
 {
-	FormattedString fs("^!");
-	fs(os);
+	UpdateConsoleColor(GlobalStdHandle(), DefaultColor());
 
 	return os;
 }
 
 inline std::ostream& operator<<(std::ostream& os, Color color)
 {
-	HANDLE std_handle = GlobalStdHandle();
-	UpdateConsoleColor(std_handle, color);
+	UpdateConsoleColor(GlobalStdHandle(), color);
 
 	return os;
 }
 
 inline std::wostream& operator<<(std::wostream& os, Color color)
 {
-	HANDLE std_handle = GlobalStdHandle();
-	UpdateConsoleColor(std_handle, color);
+	UpdateConsoleColor(GlobalStdHandle(), color);
 
 	return os;
 }
@@ -315,7 +299,7 @@ inline std::wostream& operator<<(std::wostream& os, Color color)
 /*****************
 * atexit Handler *
 ******************/
-WORD GetCurrentConsoleColor()
+inline WORD GetCurrentConsoleColor()
 {
 	HANDLE std_handle = GlobalStdHandle();
 	CONSOLE_SCREEN_BUFFER_INFO csbi;
