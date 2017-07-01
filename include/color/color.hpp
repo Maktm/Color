@@ -213,12 +213,12 @@ public:
 					portion += *iter;
 					iter++;
 				}
-
-				continue;
 			}
-
-			portion += *iter;
-			++iter;
+			else
+			{
+				portion += *iter;
+				++iter;
+			}
 		}
 
 		if (!portion.empty())
