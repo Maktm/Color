@@ -291,6 +291,15 @@ inline std::wostream& operator<<(std::wostream& os, ResetColor const& rs)
 /*****************
 * atexit Handler *
 ******************/
+WORD GetCurrentConsoleColor()
+{
+	HANDLE std_handle = FormattedString::GlobalStdHandle();
+	CONSOLE_SCREEN_BUFFER_INFO csbi;
+	GetConsoleScreenBufferInfo(std_handle, &csbi);
+
+	return csbi.wAttributes;
+}
+
 inline void ResetOnExit()
 {
 	static bool has_registered_cb = false;
@@ -300,10 +309,7 @@ inline void ResetOnExit()
 	if (!has_registered_cb)
 	{
 		has_registered_cb = true;
-
-		CONSOLE_SCREEN_BUFFER_INFO csbi;
-		GetConsoleScreenBufferInfo(std_handle, &csbi);
-		attr = csbi.wAttributes;
+		attr = GetCurrentConsoleColor();
 
 		std::atexit(ResetOnExit);
 	}
