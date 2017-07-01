@@ -293,9 +293,8 @@ inline std::wostream& operator<<(std::wostream& os, Color color)
 ******************/
 inline WORD GetCurrentConsoleColor()
 {
-	HANDLE std_handle = GlobalStdHandle();
 	CONSOLE_SCREEN_BUFFER_INFO csbi;
-	GetConsoleScreenBufferInfo(std_handle, &csbi);
+	GetConsoleScreenBufferInfo(GlobalStdHandle(), &csbi);
 
 	return csbi.wAttributes;
 }
@@ -305,7 +304,6 @@ inline void ResetOnExit()
 	static bool has_registered_cb = false;
 	static std::uint16_t attr = 0x0000;
 
-	HANDLE std_handle = GlobalStdHandle();
 	if (!has_registered_cb)
 	{
 		has_registered_cb = true;
@@ -315,7 +313,7 @@ inline void ResetOnExit()
 	}
 	else
 	{
-		UpdateConsoleColor(std_handle, attr);
+		UpdateConsoleColor(GlobalStdHandle(), attr);
 	}
 }
 
