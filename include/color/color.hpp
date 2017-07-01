@@ -64,20 +64,12 @@ enum Color : std::uint16_t
 *****************/
 class DynamicColorMapper
 {
-	std::size_t const kAvailableColors = 16;
-
 public:
 	DynamicColorMapper() = default;
 
 	DynamicColorMapper(std::map<std::uint16_t, Color> const& m)
 		: map_(m)
 	{
-	}
-
-	DynamicColorMapper& operator=(DynamicColorMapper const& rhs)
-	{
-		map_ = rhs.map_;
-		return *this;
 	}
 
 	Color GetColor(std::uint16_t idx) const
