@@ -1,11 +1,8 @@
 #pragma once
 
-#include <cassert>
 #include <ostream>
 #include <cctype>
-#include <string>
 #include <map>
-#include <vector>
 #include <algorithm>
 
 #if defined(_WIN32)
