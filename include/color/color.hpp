@@ -159,10 +159,10 @@ class FormattedString
 	char const kResetToDefEscape = '!';
 
 public:
-	FormattedString(std::string const& buffer, HANDLE std_handle = INVALID_HANDLE_VALUE)
+	FormattedString(std::string const& buffer)
 		: buffer_{buffer},
 		  mapper_{GlobalMapper()},
-		  std_handle_{std_handle == INVALID_HANDLE_VALUE ? GetStdHandle(STD_OUTPUT_HANDLE) : std_handle}
+		  std_handle_{GlobalStdHandle()}
 	{
 	}
 
@@ -213,6 +213,20 @@ public:
 			os << portion.c_str();
 			portion.clear();
 		}
+	}
+
+	/**
+	 * Call this before instantiating an object of this class type to
+	 * control the console output buffer (target output location).
+	 */
+	static HANDLE GlobalStdHandle(HANDLE std_handle = INVALID_HANDLE_VALUE)
+	{
+		static HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
+		
+		if (std_handle != INVALID_HANDLE_VALUE)
+			handle = std_handle;
+
+		return handle;
 	}
 
 private:
