@@ -305,7 +305,7 @@ inline void ResetOnExit()
 	static bool has_registered_cb = false;
 	static std::uint16_t attr = 0x0000;
 
-	HANDLE std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+	HANDLE std_handle = FormattedString::GlobalStdHandle();
 	if (!has_registered_cb)
 	{
 		has_registered_cb = true;
