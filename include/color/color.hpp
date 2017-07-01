@@ -148,10 +148,23 @@ inline Color DefaultColor(Color color = static_cast<Color>(0xFF))
 	return default_color;
 }
 
+/**
+* Call this before instantiating an object of this class type to
+* control the console output buffer (target output location).
+*/
+inline HANDLE GlobalStdHandle(HANDLE std_handle = INVALID_HANDLE_VALUE)
+{
+	static HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
+
+	if (std_handle != INVALID_HANDLE_VALUE)
+		handle = std_handle;
+
+	return handle;
+}
+
 /************
 * Formatter *
 *************/
-
 class FormattedString
 {
 	char const kForegroundEscape = '^';
@@ -213,20 +226,6 @@ public:
 			os << portion.c_str();
 			portion.clear();
 		}
-	}
-
-	/**
-	 * Call this before instantiating an object of this class type to
-	 * control the console output buffer (target output location).
-	 */
-	static HANDLE GlobalStdHandle(HANDLE std_handle = INVALID_HANDLE_VALUE)
-	{
-		static HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
-		
-		if (std_handle != INVALID_HANDLE_VALUE)
-			handle = std_handle;
-
-		return handle;
 	}
 
 private:
@@ -293,7 +292,7 @@ inline std::wostream& operator<<(std::wostream& os, ResetColor const& rs)
 ******************/
 WORD GetCurrentConsoleColor()
 {
-	HANDLE std_handle = FormattedString::GlobalStdHandle();
+	HANDLE std_handle = GlobalStdHandle();
 	CONSOLE_SCREEN_BUFFER_INFO csbi;
 	GetConsoleScreenBufferInfo(std_handle, &csbi);
 
@@ -305,7 +304,7 @@ inline void ResetOnExit()
 	static bool has_registered_cb = false;
 	static std::uint16_t attr = 0x0000;
 
-	HANDLE std_handle = FormattedString::GlobalStdHandle();
+	HANDLE std_handle = GlobalStdHandle();
 	if (!has_registered_cb)
 	{
 		has_registered_cb = true;
