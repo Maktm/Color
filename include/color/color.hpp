@@ -291,7 +291,7 @@ inline std::wostream& operator<<(std::wostream& os, ResetColor const& rs)
 /*****************
 * atexit Handler *
 ******************/
-inline void SetAtexitHandler()
+inline void ResetOnExit()
 {
 	static bool has_registered_cb = false;
 	static std::uint16_t attr = 0x0000;
