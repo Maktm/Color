@@ -102,7 +102,7 @@ private:
 	std::map<std::uint16_t, Color> map_;
 };
 
-inline DynamicColorMapper GlobalMapper(DynamicColorMapper tcm = DynamicColorMapper{})
+inline DynamicColorMapper GlobalMapper(DynamicColorMapper dcm = DynamicColorMapper{})
 {
 	static DynamicColorMapper default_mapping{
 		{
@@ -128,9 +128,9 @@ inline DynamicColorMapper GlobalMapper(DynamicColorMapper tcm = DynamicColorMapp
 		}
 	};
 
-	if (tcm.Size() > 0)
+	if (dcm.Size() > 0)
 	{
-		default_mapping = tcm;
+		default_mapping = dcm;
 	}
 
 	return default_mapping;
@@ -162,6 +162,11 @@ inline HANDLE GlobalStdHandle(HANDLE std_handle = INVALID_HANDLE_VALUE)
 	return handle;
 }
 
+void UpdateConsoleColor(HANDLE std_handle, std::uint16_t color)
+{
+	SetConsoleTextAttribute(std_handle, color);
+}
+
 /************
 * Formatter *
 *************/
@@ -174,8 +179,8 @@ class FormattedString
 public:
 	FormattedString(std::string const& buffer)
 		: buffer_{buffer},
-		  mapper_{GlobalMapper()},
-		  std_handle_{GlobalStdHandle()}
+		mapper_{GlobalMapper()},
+		std_handle_{GlobalStdHandle()}
 	{
 	}
 
@@ -232,7 +237,7 @@ private:
 	void SetConsoleColor(std::uint16_t idx, bool use_mapper = true) const
 	{
 		auto color = use_mapper ? mapper_.GetColor(idx) : idx;
-		SetConsoleTextAttribute(std_handle_, color);
+		UpdateConsoleColor(std_handle_, color);
 	}
 
 	inline bool IsHex(char c) const
@@ -264,12 +269,14 @@ struct ResetColor
 inline std::ostream& operator<<(std::ostream& os, FormattedString const& fs)
 {
 	fs(os);
+
 	return os;
 }
 
 inline std::wostream& operator<<(std::wostream& os, FormattedString const& fs)
 {
 	fs(os);
+
 	return os;
 }
 
@@ -277,6 +284,7 @@ inline std::ostream& operator<<(std::ostream& os, ResetColor const& rs)
 {
 	FormattedString fs("^!");
 	fs(os);
+
 	return os;
 }
 
@@ -284,6 +292,23 @@ inline std::wostream& operator<<(std::wostream& os, ResetColor const& rs)
 {
 	FormattedString fs("^!");
 	fs(os);
+
+	return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, Color color)
+{
+	HANDLE std_handle = GlobalStdHandle();
+	UpdateConsoleColor(std_handle, color);
+
+	return os;
+}
+
+inline std::wostream& operator<<(std::wostream& os, Color color)
+{
+	HANDLE std_handle = GlobalStdHandle();
+	UpdateConsoleColor(std_handle, color);
+
 	return os;
 }
 
@@ -314,7 +339,7 @@ inline void ResetOnExit()
 	}
 	else
 	{
-		SetConsoleTextAttribute(std_handle, attr);
+		UpdateConsoleColor(std_handle, attr);
 	}
 }
 
