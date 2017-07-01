@@ -305,7 +305,7 @@ inline void ResetOnExit()
 		GetConsoleScreenBufferInfo(std_handle, &csbi);
 		attr = csbi.wAttributes;
 
-		std::atexit(SetAtexitHandler);
+		std::atexit(ResetOnExit);
 	}
 	else
 	{
