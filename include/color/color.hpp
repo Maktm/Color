@@ -319,6 +319,6 @@ inline void ResetOnExit()
 	}
 }
 
-using format = color::FormattedString;
+using fs = color::FormattedString;
 using reset = color::ResetColor;
 }
