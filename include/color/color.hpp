@@ -88,34 +88,34 @@ private:
 	std::map<std::uint16_t, Color> map_;
 };
 
-inline DynamicColorMapper GlobalMapper(DynamicColorMapper dcm = DynamicColorMapper{})
+inline DynamicColorMapper GlobalMapper(DynamicColorMapper mapper = DynamicColorMapper{})
 {
 	static DynamicColorMapper default_mapping{
 		{
 			/* Light Foreground Colors */
-			{0x0001, Color::LightRed},
-			{0x0002, Color::LightGreen},
-			{0x0003, Color::LightYellow},
-			{0x0004, Color::LightBlue},
-			{0x0005, Color::LightAqua},
-			{0x0006, Color::LightPurple},
-			{0x0007, Color::BrightWhite},
+			{0x0001, LightRed},
+			{0x0002, LightGreen},
+			{0x0003, LightYellow},
+			{0x0004, LightBlue},
+			{0x0005, LightAqua},
+			{0x0006, LightPurple},
+			{0x0007, BrightWhite},
 
 			/* Foreground Colors */
-			{0x0008, Color::Red},
-			{0x0009, Color::Green},
-			{0x000A, Color::Yellow},
-			{0x000B, Color::Blue},
-			{0x000C, Color::Aqua},
-			{0x000D, Color::Purple},
-			{0x000E, Color::Gray},
-			{0x000F, Color::White},
-			{0x0000, Color::Black}
+			{0x0008, Red},
+			{0x0009, Green},
+			{0x000A, Yellow},
+			{0x000B, Blue},
+			{0x000C, Aqua},
+			{0x000D, Purple},
+			{0x000E, Gray},
+			{0x000F, White},
+			{0x0000, Black}
 		}
 	};
 
-	if (dcm.Size() > 0)
-		default_mapping = dcm;
+	if (mapper.Size() > 0)
+		default_mapping = mapper;
 
 	return default_mapping;
 }
@@ -131,7 +131,7 @@ inline Color DefaultColor(Color color = static_cast<Color>(0xFF))
 }
 
 /**
-* Call this before instantiating an object of FormattedString class type to
+* Call this before instantiating an object of FormattedString type to
 * control the console output buffer (target output location).
 */
 inline HANDLE GlobalStdHandle(HANDLE std_handle = INVALID_HANDLE_VALUE)
@@ -142,6 +142,14 @@ inline HANDLE GlobalStdHandle(HANDLE std_handle = INVALID_HANDLE_VALUE)
 		handle = std_handle;
 
 	return handle;
+}
+
+inline WORD GetCurrentConsoleColor()
+{
+	CONSOLE_SCREEN_BUFFER_INFO csbi;
+	GetConsoleScreenBufferInfo(GlobalStdHandle(), &csbi);
+
+	return csbi.wAttributes;
 }
 
 inline void UpdateConsoleColor(HANDLE std_handle, std::uint16_t color)
@@ -170,6 +178,11 @@ public:
 	template <typename CharT>
 	void operator()(std::basic_ostream<CharT>& os) const
 	{
+		// Fixes the issue of the default color not being set
+		// when no color changes are made by the user.
+		if (GetCurrentConsoleColor() != DefaultColor())
+			SetConsoleColor(DefaultColor(), false);
+
 		std::string portion{""};
 		for (auto iter = buffer_.begin(); iter != buffer_.end();)
 		{
@@ -288,14 +301,6 @@ inline std::wostream& operator<<(std::wostream& os, Color color)
 /*****************
 * atexit Handler *
 ******************/
-inline WORD GetCurrentConsoleColor()
-{
-	CONSOLE_SCREEN_BUFFER_INFO csbi;
-	GetConsoleScreenBufferInfo(GlobalStdHandle(), &csbi);
-
-	return csbi.wAttributes;
-}
-
 inline void ResetOnExit()
 {
 	static bool has_registered_cb = false;
