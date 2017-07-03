@@ -13,6 +13,36 @@
 
 namespace color
 {
+namespace detail
+{
+/**
+* Call this before instantiating an object of FormattedString type to
+* control the console output buffer (target output location).
+*/
+inline HANDLE GlobalStdHandle(HANDLE std_handle = INVALID_HANDLE_VALUE)
+{
+	static HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
+
+	if (std_handle != INVALID_HANDLE_VALUE)
+		handle = std_handle;
+
+	return handle;
+}
+
+inline WORD GetCurrentConsoleColor()
+{
+	CONSOLE_SCREEN_BUFFER_INFO csbi;
+	GetConsoleScreenBufferInfo(GlobalStdHandle(), &csbi);
+
+	return csbi.wAttributes;
+}
+
+inline void UpdateConsoleColor(HANDLE std_handle, std::uint16_t color)
+{
+	SetConsoleTextAttribute(std_handle, color);
+}
+}
+
 /********************
 * Windows Constants *
 *********************/
@@ -130,33 +160,6 @@ inline Color DefaultColor(Color color = static_cast<Color>(0xFF))
 	return default_color;
 }
 
-/**
-* Call this before instantiating an object of FormattedString type to
-* control the console output buffer (target output location).
-*/
-inline HANDLE GlobalStdHandle(HANDLE std_handle = INVALID_HANDLE_VALUE)
-{
-	static HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
-
-	if (std_handle != INVALID_HANDLE_VALUE)
-		handle = std_handle;
-
-	return handle;
-}
-
-inline WORD GetCurrentConsoleColor()
-{
-	CONSOLE_SCREEN_BUFFER_INFO csbi;
-	GetConsoleScreenBufferInfo(GlobalStdHandle(), &csbi);
-
-	return csbi.wAttributes;
-}
-
-inline void UpdateConsoleColor(HANDLE std_handle, std::uint16_t color)
-{
-	SetConsoleTextAttribute(std_handle, color);
-}
-
 /************
 * Formatter *
 *************/
@@ -171,7 +174,7 @@ public:
 	FormattedString(std::string const& buffer)
 		: buffer_{buffer},
 		  mapper_{GlobalMapper()},
-		  std_handle_{GlobalStdHandle()}
+		  std_handle_{detail::GlobalStdHandle()}
 	{
 	}
 
@@ -180,7 +183,7 @@ public:
 	{
 		// Fixes the issue of the default color not being set
 		// when no color changes are made by the user.
-		if (GetCurrentConsoleColor() != DefaultColor())
+		if (detail::GetCurrentConsoleColor() != DefaultColor())
 			SetConsoleColor(DefaultColor(), false);
 
 		std::string portion{""};
@@ -233,7 +236,7 @@ private:
 	void SetConsoleColor(std::uint16_t idx, bool use_mapper = true) const
 	{
 		auto color = use_mapper ? mapper_.GetColor(idx) : idx;
-		UpdateConsoleColor(std_handle_, color);
+		detail::UpdateConsoleColor(std_handle_, color);
 	}
 
 	bool IsColorEscape(std::string::const_iterator iter, std::string::const_iterator end) const
@@ -272,28 +275,28 @@ inline std::wostream& operator<<(std::wostream& os, FormattedString const& fs)
 
 inline std::ostream& operator<<(std::ostream& os, ResetColor const& rs)
 {
-	UpdateConsoleColor(GlobalStdHandle(), DefaultColor());
+	detail::UpdateConsoleColor(detail::GlobalStdHandle(), DefaultColor());
 
 	return os;
 }
 
 inline std::wostream& operator<<(std::wostream& os, ResetColor const& rs)
 {
-	UpdateConsoleColor(GlobalStdHandle(), DefaultColor());
+	detail::UpdateConsoleColor(detail::GlobalStdHandle(), DefaultColor());
 
 	return os;
 }
 
 inline std::ostream& operator<<(std::ostream& os, Color color)
 {
-	UpdateConsoleColor(GlobalStdHandle(), color);
+	detail::UpdateConsoleColor(detail::GlobalStdHandle(), color);
 
 	return os;
 }
 
 inline std::wostream& operator<<(std::wostream& os, Color color)
 {
-	UpdateConsoleColor(GlobalStdHandle(), color);
+	detail::UpdateConsoleColor(detail::GlobalStdHandle(), color);
 
 	return os;
 }
@@ -309,13 +312,13 @@ inline void ResetOnExit()
 	if (!has_registered_cb)
 	{
 		has_registered_cb = true;
-		attr = GetCurrentConsoleColor();
+		attr = detail::GetCurrentConsoleColor();
 
 		std::atexit(ResetOnExit);
 	}
 	else
 	{
-		UpdateConsoleColor(GlobalStdHandle(), attr);
+		detail::UpdateConsoleColor(detail::GlobalStdHandle(), attr);
 	}
 }
 
