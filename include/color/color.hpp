@@ -475,7 +475,7 @@ namespace color
 		}
 	}
 
-	using fs = FormattedString;
+	using fcol = FormattedString;
 	using resetfg = ResetColor<ResetForeground>;
 	using resetbg = ResetColor<ResetBackground>;
 }
