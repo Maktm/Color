@@ -284,13 +284,18 @@ namespace color
 		template <typename CharT>
 		void operator()(std::basic_ostream<CharT>& os) const
 		{
+			// Disabled for now since it causes an issue with code
+			// like the following:
+			//
+			//   std::cout << LightBlue << fcol(" hello^!");
+			//
 			// Issue: this doesn't set the default background/foreground
 			// unless the user uses the FormattedString class.
-			if (detail::GetForegroundColor() != GetDefaultFgColorRef())
-				detail::SetForegroundColor(GetDefaultFgColorRef());
-
-			if (detail::GetBackgroundColor() != GetDefaultBgColorRef())
-				detail::SetBackgroundColor(GetDefaultBgColorRef());
+			// if (detail::GetForegroundColor() != GetDefaultFgColorRef())
+			// 	detail::SetForegroundColor(GetDefaultFgColorRef());
+			// 
+			// if (detail::GetBackgroundColor() != GetDefaultBgColorRef())
+			// 	detail::SetBackgroundColor(GetDefaultBgColorRef());
 
 			std::string buffer("");
 			for (auto it = format_.cbegin(); it != format_.cend();)
