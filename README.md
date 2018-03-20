@@ -1,4 +1,4 @@
-## Colorize
+## Color
 
 Windows colored output library for C++. The library is written using C++11 and uses
 a `^1Hello` syntax where `^1` represents the user wanted to change to the color
