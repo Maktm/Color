@@ -93,6 +93,7 @@ namespace color
 								// Parse the data and change the color as needed.
 								// As in just take the number inside.
 								buffer.append("[COLOR]");
+								buffer_for_braces.clear();
 							}
 							state = processing_flags::none_of_the_above;
 						}
